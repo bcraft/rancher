@@ -89,18 +89,7 @@ func addRoles(wrangler *wrangler.Context, management *config.ManagementContext) 
 	userFleetDefault.addRule().apiGroups("").resources("secrets").verbs("create")
 	userFleetDefault.addRule().apiGroups("infrastructure.cluster.x-k8s.io").resources("*").verbs("create")
 
-	rb.addRole("User Base", "user-base").
-		addRule().apiGroups("ext.cattle.io").resources("useractivities").verbs("get", "update", "patch").
-		addRule().apiGroups("ext.cattle.io").resources("selfusers").verbs("create").
-		addRule().apiGroups("ext.cattle.io").resources("passwordchangerequests").verbs("create").
-		addRule().apiGroups("ext.cattle.io").resources("kubeconfigs").verbs("get", "list", "watch", "create", "delete", "deletecollection", "update", "patch").
-		// standard permissions for regular users, on their tokens
-		// Note: The ext token store applies additional restrictions. A user can see and manipulate only their own tokens.
-		addRule().apiGroups("ext.cattle.io").resources("tokens").verbs("get", "list", "watch", "create", "delete", "update", "patch").
-		addRule().apiGroups("management.cattle.io").resources("preferences").verbs("*").
-		addRule().apiGroups("management.cattle.io").resources("settings").verbs("get", "list", "watch").
-		addRule().apiGroups("management.cattle.io").resources("features").verbs("get", "list", "watch").
-		addRule().apiGroups("management.cattle.io").resources("rancherusernotifications").verbs("get", "list", "watch")
+	addUserBaseRules(rb.addRole("User Base", "user-base"))
 
 	// TODO user should be dynamically authorized to only see herself
 	// TODO enable when groups are "in". they need to be self-service
@@ -400,26 +389,34 @@ func addRoles(wrangler *wrangler.Context, management *config.ManagementContext) 
 	return adminName, nil
 }
 
-func addUserRules(role *roleBuilder) *roleBuilder {
+func addUserBaseRules(role *roleBuilder) *roleBuilder {
 	role.
-		addRule().apiGroups("ext.cattle.io").resources("kubeconfigs").verbs("get", "list", "watch", "create", "delete", "deletecollection", "update", "patch").
 		addRule().apiGroups("ext.cattle.io").resources("useractivities").verbs("get", "update", "patch").
-		// standard permissions for regular users, on their tokens
-		// Note: The ext token store applies additional restrictions. A user can see and manipulate only their own tokens.
-		addRule().apiGroups("ext.cattle.io").resources("tokens").verbs("get", "list", "watch", "create", "delete", "update", "patch").
 		addRule().apiGroups("ext.cattle.io").resources("selfusers").verbs("create").
 		addRule().apiGroups("ext.cattle.io").resources("passwordchangerequests").verbs("create").
-		addRule().apiGroups("management.cattle.io").resources("principals", "roletemplates").verbs("get", "list", "watch").
+		addRule().apiGroups("ext.cattle.io").resources("kubeconfigs").verbs("get", "list", "watch", "create", "delete", "deletecollection", "update", "patch").
+		// // standard permissions for regular users, on their tokens
+		// // Note: The ext token store applies additional restrictions. A user can see and manipulate only their own tokens.
+		addRule().apiGroups("ext.cattle.io").resources("tokens").verbs("get", "list", "watch", "create", "delete", "update", "patch").
 		addRule().apiGroups("management.cattle.io").resources("preferences").verbs("*").
 		addRule().apiGroups("management.cattle.io").resources("settings").verbs("get", "list", "watch").
 		addRule().apiGroups("management.cattle.io").resources("features").verbs("get", "list", "watch").
+		addRule().apiGroups("management.cattle.io").resources("rancherusernotifications").verbs("get", "list", "watch")
+
+	return role
+}
+
+func addUserRules(role *roleBuilder) *roleBuilder {
+
+	role = addUserBaseRules(role)
+	role.
+		addRule().apiGroups("management.cattle.io").resources("principals", "roletemplates").verbs("get", "list", "watch").
 		addRule().apiGroups("management.cattle.io").resources("clusters").verbs("create").
 		addRule().apiGroups("management.cattle.io").resources("nodedrivers").verbs("get", "list", "watch").
 		addRule().apiGroups("management.cattle.io").resources("kontainerdrivers").verbs("get", "list", "watch").
 		addRule().apiGroups("management.cattle.io").resources("fleetworkspaces").verbs("create").
 		addRule().apiGroups("provisioning.cattle.io").resources("clusters").verbs("create").
 		addRule().apiGroups("rke-machine-config.cattle.io").resources("*").verbs("create").
-		addRule().apiGroups("management.cattle.io").resources("rancherusernotifications").verbs("get", "list", "watch").
 		addRule().apiGroups("catalog.cattle.io").resources("clusterrepos").verbs("get", "list", "watch").
 		addRule().apiGroups("management.cattle.io").resources("podsecurityadmissionconfigurationtemplates").verbs("get", "list", "watch")
 
